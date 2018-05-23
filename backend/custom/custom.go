@@ -63,6 +63,10 @@ func (c *CustomBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
 	return nil, false, fmt.Errorf("invalid response from cmd")
 }
 
+func (c *CustomBackend) PutFile(fk *backend.FileKey, buf []byte) error {
+	return fmt.Errorf("not yet implemented")
+}
+
 func (c *CustomBackend) PutSnap(sk *backend.SnapKey, sr io.Reader) (bool, error) {
 	cmd := exec.Command(c.command)
 

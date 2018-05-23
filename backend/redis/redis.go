@@ -26,9 +26,9 @@ func New(host, port string) *RedisBackend {
 	}
 }
 
-func (fs *RedisBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
+func (rb *RedisBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
 	redisKey := fmt.Sprintf("%v/%v", fk.Base, fk.Snapshot)
-	out, err := fs.client.HGet(redisKey, fk.FilePath).Bytes()
+	out, err := rb.client.HGet(redisKey, fk.FilePath).Bytes()
 	if err != nil {
 		if err == redis.Nil {
 			return nil, false, nil
@@ -38,7 +38,20 @@ func (fs *RedisBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
 	return out, true, nil
 }
 
-func (fs *RedisBackend) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {
+func (rb *RedisBackend) PutFile(fk *backend.FileKey, buf []byte) error {
+	redisKey := fmt.Sprintf("%v/%v", fk.Base, fk.Snapshot)
+	_, err := rb.client.HSet(redisKey, fk.FilePath, buf).Result()
+	if err != nil {
+		log.WithFields(log.Fields{
+			"redisKey":    redisKey,
+			"fk.FilePath": fk.FilePath,
+		}).Warn("HSET failed")
+		return fmt.Errorf("HMSET failed: %v", err)
+	}
+	return nil
+}
+
+func (rb *RedisBackend) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {
 	firstFour := make([]byte, 4)
 	if _, err := io.ReadFull(r, firstFour); err != nil {
 		if err == io.EOF {
@@ -79,7 +92,7 @@ func (fs *RedisBackend) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) 
 		return false, nil
 	}
 
-	pipe := fs.client.TxPipeline()
+	pipe := rb.client.TxPipeline()
 
 	if _, err := pipe.Del(redisKey).Result(); err != nil {
 		return false, fmt.Errorf("HDEL failed: %v", err)

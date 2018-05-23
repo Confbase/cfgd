@@ -1,0 +1,12 @@
+{
+    "title": "",
+    "type": "object",
+    "properties": {
+        "hi": {
+            "type": "boolean"
+        },
+        "myName": {
+            "type": "string"
+        }
+    }
+}

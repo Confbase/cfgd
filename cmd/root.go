@@ -19,12 +19,10 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"github.com/Confbase/cfgd/daemon"
 )
 
-var cfgFile string
 var cfg daemon.Config
 
 // RootCmd represents the base command when called without any subcommands
@@ -43,8 +41,6 @@ custom backend to be used instead of what is specified in the --backend flag.`,
 	},
 }
 
-// Execute adds all child commands to the root command sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := RootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "%s\n", err)
@@ -53,28 +49,11 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
-	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.cfgd.yaml)")
 	RootCmd.Flags().StringVarP(&cfg.Host, "host", "a", "localhost", "host on which to run daemon")
 	RootCmd.Flags().StringVarP(&cfg.Port, "port", "p", "1066", "port on which to run daemon")
-	RootCmd.Flags().StringVarP(&cfg.Backend, "backend", "b", "fs", "specifies backend")
-	RootCmd.Flags().StringVarP(&cfg.CustomBackend, "custom-backend", "", "", "specifies custom backend binary")
+	RootCmd.Flags().StringVarP(&cfg.Backend, "backend", "b", "fs", "backend (fs|redis)")
+	RootCmd.Flags().StringVarP(&cfg.CustomBackend, "custom-backend", "", "", "custom backend")
 	RootCmd.Flags().StringVarP(&cfg.RedisHost, "redis-host", "", "localhost", "redis backend host")
 	RootCmd.Flags().StringVarP(&cfg.RedisPort, "redis-port", "", "6379", "redis backend port")
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" { // enable ability to specify config file via flag
-		viper.SetConfigFile(cfgFile)
-	}
-
-	viper.SetConfigName(".cfgd") // name of config file (without extension)
-	viper.AddConfigPath("$HOME") // adding home directory as first search path
-	viper.AutomaticEnv()         // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
-	}
+	RootCmd.Flags().StringVarP(&cfg.FSRootDir, "fs-root-dir", "", "/srv/git/", "root dir for fs backend")
 }

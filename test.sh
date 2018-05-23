@@ -17,8 +17,8 @@ if [ ! -z "$gofmt_output" ]; then
 fi
 printf "OK\n"
 
-printf "Running 'go install'..."
-go_install_output=`go install 2>&1`
+printf "Running 'go install ./...'..."
+go_install_output=`go install ./... 2>&1`
 if [ ! -z "$go_install_output" ]; then
     printf "FAIL. output:\n$go_install_output" 1>&2
     exit 1

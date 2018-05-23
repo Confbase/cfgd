@@ -10,9 +10,11 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Confbase/cfgd/backend"
+	"github.com/Confbase/cfgd/backend/fs"
 )
 
 var back backend.Backend
+var fsBackend *fs.FileSystem
 
 func sendFile(w http.ResponseWriter, r *http.Request, fk *backend.FileKey) {
 	buf, isExist, err := back.GetFile(fk)
@@ -29,9 +31,34 @@ func sendFile(w http.ResponseWriter, r *http.Request, fk *backend.FileKey) {
 		return
 	}
 	if !isExist {
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("404 Content Not Found"))
-		return
+		if _, isFs := back.(*fs.FileSystem); isFs {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("404 Content Not Found"))
+			return
+		}
+		buf, isExist, err = fsBackend.GetFile(fk)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"fk.Base":     fk.Base,
+				"fk.Snapshot": fk.Snapshot,
+				"fk.FilePath": fk.FilePath,
+				"err":         err,
+			}).Warn("fsBackend.GetFile(fk) failed")
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("500 Internal Server Error"))
+			return
+		}
+		if !isExist {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("404 Content Not Found"))
+			return
+		}
+		if err := back.PutFile(fk, buf); err != nil {
+			log.WithFields(log.Fields{
+				"fk": fk,
+			}).Warn("back.PutFile(fk, buf) failed")
+		}
 	}
 	totalWritten := 0
 	for totalWritten < len(buf) {
@@ -66,7 +93,8 @@ func recvSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey, snapR
 		w.Write([]byte("400 Bad Request"))
 		return
 	}
-	w.Write([]byte("200 OK"))
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("201 Content Created"))
 }
 
 func parseFileKey(path string) (*backend.FileKey, bool) {
@@ -128,6 +156,8 @@ func Run(cfg *Config) {
 		os.Exit(1)
 	}
 	back = b
+
+	fsBackend = fs.New(cfg.FSRootDir)
 
 	log.WithFields(log.Fields{
 		"host": cfg.Host,

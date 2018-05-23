@@ -15,5 +15,6 @@ type SnapKey struct {
 
 type Backend interface {
 	GetFile(*FileKey) ([]byte, bool, error)
+	PutFile(*FileKey, []byte) error
 	PutSnap(*SnapKey, io.Reader) (bool, error)
 }

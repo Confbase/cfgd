@@ -106,7 +106,7 @@ api_put_file() {
     status="$?"
 
     expect_status='0'
-    expect='200 OK'
+    expect='201 Content Created'
 
     kill "$cfgd_pid"
     wait "$cfgd_pid" >/dev/null 2>&1

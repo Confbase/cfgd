@@ -16,6 +16,7 @@ type Config struct {
 	CustomBackend string
 	RedisHost     string
 	RedisPort     string
+	FSRootDir     string
 }
 
 func (cfg *Config) ToBackend() (backend.Backend, error) {
@@ -27,7 +28,7 @@ func (cfg *Config) ToBackend() (backend.Backend, error) {
 	}
 	switch name {
 	case "fs":
-		return fs.New("."), nil
+		return fs.New(cfg.FSRootDir), nil
 	case "redis":
 		return redis.New(cfg.RedisHost, cfg.RedisPort), nil
 	default:

@@ -5,7 +5,7 @@ import (
 
 	"github.com/Confbase/cfgd/backend"
 	"github.com/Confbase/cfgd/backend/custom"
-	"github.com/Confbase/cfgd/backend/fs"
+	"github.com/Confbase/cfgd/backend/noop"
 	"github.com/Confbase/cfgd/backend/redis"
 )
 
@@ -27,8 +27,8 @@ func (cfg *Config) ToBackend() (backend.Backend, error) {
 		name = cfg.Backend
 	}
 	switch name {
-	case "fs":
-		return fs.New(cfg.FSRootDir), nil
+	case "":
+		return noop.New(), nil
 	case "redis":
 		return redis.New(cfg.RedisHost, cfg.RedisPort), nil
 	default:

@@ -21,20 +21,17 @@ modifying the source code of cfgd or having to re-install it. See the
 
 ## Contents
 
-This repository contains four things:
+This repository contains three things:
 
 1. cfgd---the cfg server daemon
-2. a binary for creating cfg snapshot messages called cfg-build-snap
-3. a binary for uploading snapshots to cfgd called cfg-send-snap
-4. a post-receive git hook which leverages cfg-build-snap and cfg-send-snap to
-upload snapshots to cfgd
+2. cfgsnap---a Go package and binary for building and sending snapshot messages
+4. a post-receive git hook which leverages cfgsnap to upload snapshots to cfgd
 
 ## Installation
 
 To build from source, run `go get -u github.com/Confbase/cfgd`.
 
-Place the post-receive hook, cfg-build-snap, and cfg-send-snap in the
-appropriate directories (TODO: complete this documentation).
+Place the post-receive hook, cfgd, and cfgsnap in the appropriate directories.
 
 ## Testing
 
@@ -47,7 +44,7 @@ input. To use a custom backend, specifiy it with the `--custom-backend` flag
 when launching cfgd:
 
 ```
-$ cfgd --custom-backend=etcd
+$ cfgd --custom-backend=etcd-adapter
 ```
 
 The string value of the `--custom-backend` flag is interpreted as the path to an
@@ -112,8 +109,8 @@ file contents, formatted like this
 | First 2 bytes (unsigned big endian 16-bit integer) | Next 8 bytes (unsigned big endian 64-bit integer) | Variable length | Variable length |
 
 **Note:** if you intend to write a custom backend in Go, you can simply
-import the code which cfgd uses to parse PUT messages. See this excerpt from
-cfgd's source code:
+import the code which cfgd uses to parse PUT messages. Here is an example
+from the redis backend:
 
 ```
 import (
@@ -121,32 +118,36 @@ import (
 	"github.com/Confbase/cfgd/snapshot"
 	...
 )
-
 ...
+	snapReader := snapshot.NewReader(bufio.NewReader(r))
+	redisKey := sk.ToHeaderKey()
+	isOk, err := snapReader.VerifyHeader(redisKey)
 
-snapReader := snapshot.NewReader(br)
-for {
-	sf, done, err := snapReader.Next()
-	if err != nil {
-		return false, fmt.Errorf("snapReader failed: %v", err)
+	// handle isOk, err here
+
+	for {
+		sf, done, err := snapReader.Next()
+
+		// handle err here
+
+		if done {
+			break
+		}
+
+		// use sf.FilePath, sf.Body here
 	}
-	if done {
-		break
-	}
-	// use sf.FilePath and sf.Body here
-}
 ```
 
-The binary cfg-build-snap can serve as a reference for this format. It takes one
+The binary `cfgsnap build` can serve as a reference for this format. It takes one
 argument---the path to a directory---and recursively traverses the directory,
 writing a *binary PUT message* to standard output for each file it finds. Note
-that cfg-build-snap does not include the *PUT header*. Example:
+that `cfgsnap build` does not include the *PUT header*. Example:
 
 ```
 $ cd $GOPATH/src/github.com/Confbase/cfgd/cfg-build-snap
 $ ls test_snapshot
 hello.toml  hello_schema.json
-$ cfg-build-snap test_snapshot > reference_snap
+$ cfgsnap test_snapshot > reference_snap
 ```
 
 The file `reference_snap` will contain two *binary PUT messages*, one for

@@ -97,12 +97,12 @@ api_get_file_400_case_3() {
 }
 
 api_put_file() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
+    cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null > cfgd_test_logs 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
 
-    output=`curl -s -X POST localhost:1066/mybase/master 2>&1`
+    output="$(curl -s -X POST localhost:1066/mybase/master --data-binary @cfgd_test_put_file)"
     status="$?"
 
     expect_status='0'
@@ -199,7 +199,7 @@ tests=(
     "api_get_file_400_case_1"
     "api_get_file_400_case_2"
     "api_get_file_400_case_3"
-    "api_put_file"
+#    "api_put_file"
     "api_put_file_400_case_1"
     "api_put_file_400_case_2"
     "api_put_file_400_case_3"

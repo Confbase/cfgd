@@ -1,4 +1,4 @@
-package lib
+package send
 
 type Config struct {
 	BaseName string

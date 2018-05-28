@@ -51,7 +51,7 @@ func Execute() {
 func init() {
 	RootCmd.Flags().StringVarP(&cfg.Host, "host", "a", "localhost", "host on which to run daemon")
 	RootCmd.Flags().StringVarP(&cfg.Port, "port", "p", "1066", "port on which to run daemon")
-	RootCmd.Flags().StringVarP(&cfg.Backend, "backend", "b", "fs", "backend (fs|redis)")
+	RootCmd.Flags().StringVarP(&cfg.Backend, "backend", "b", "", "backend (none|redis)")
 	RootCmd.Flags().StringVarP(&cfg.CustomBackend, "custom-backend", "", "", "custom backend")
 	RootCmd.Flags().StringVarP(&cfg.RedisHost, "redis-host", "", "localhost", "redis backend host")
 	RootCmd.Flags().StringVarP(&cfg.RedisPort, "redis-port", "", "6379", "redis backend port")

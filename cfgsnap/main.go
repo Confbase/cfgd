@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/Confbase/cfgd/cfg-send-snap/cmd"
+import "github.com/Confbase/cfgd/cfgsnap/cmd"
 
 func main() {
 	cmd.Execute()

@@ -1,0 +1,15 @@
+#!/bin/sh
+
+while read oldrev newrev refname
+do
+    branch="$(git rev-parse --symbolic --abbrev-ref $refname)"
+    targetdir="snapshots/$branch"
+    rm -rf "snapshots/$branch"
+    mkdir -p "$targetdir"
+    git --git-dir=. --work-tree="$targetdir" checkout -f "$branch"
+    if [ "$?" -ne "0" ]; then
+        exit 1
+    fi
+    cfgsnap build "snapshots/$branch" | \
+        cfgsnap send "$(basename $(pwd))" "$branch"
+done

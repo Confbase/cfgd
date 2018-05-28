@@ -52,53 +52,19 @@ func (rb *RedisBackend) PutFile(fk *backend.FileKey, buf []byte) error {
 }
 
 func (rb *RedisBackend) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {
-	firstFour := make([]byte, 4)
-	if _, err := io.ReadFull(r, firstFour); err != nil {
-		if err == io.EOF {
-			log.WithFields(log.Fields{
-				"sk": sk,
-			}).Info("failed to read first four bytes")
-			return false, nil
-		}
-		return false, fmt.Errorf("read failed: %v", err)
-	}
-	if string(firstFour) != "PUT " {
-		log.WithFields(log.Fields{
-			"sk": sk,
-		}).Info("first four bytes weren't 'PUT '")
-		return false, nil
-	}
-
-	br := bufio.NewReader(r)
-	line, err := br.ReadSlice('\n')
-	if err != nil {
-		if err == io.EOF {
-			log.WithFields(log.Fields{
-				"line": string(line),
-				"sk":   sk,
-			}).Info("failed to find '\\n' before EOF")
-			return false, nil
-		}
-		return false, fmt.Errorf("br.ReadString('\n') failed: %v", err)
-	}
-	payloadRedisKey := string(line[:len(line)-1])
-	redisKey := fmt.Sprintf("%v/%v", sk.Base, sk.Snapshot)
-	if payloadRedisKey != redisKey {
-		log.WithFields(log.Fields{
-			"payloadRedisKey": payloadRedisKey,
-			"redisKey":        redisKey,
-			"sk":              sk,
-		}).Info("sk key from URL path does not match payload key")
+	snapReader := snapshot.NewReader(bufio.NewReader(r))
+	redisKey := sk.ToHeaderKey()
+	if isOk, err := snapReader.VerifyHeader(redisKey); err != nil {
+		return false, err
+	} else if !isOk {
 		return false, nil
 	}
 
 	pipe := rb.client.TxPipeline()
-
 	if _, err := pipe.Del(redisKey).Result(); err != nil {
 		return false, fmt.Errorf("HDEL failed: %v", err)
 	}
 
-	snapReader := snapshot.NewReader(br)
 	for {
 		sf, done, err := snapReader.Next()
 		if err != nil {

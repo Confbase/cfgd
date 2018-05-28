@@ -1,8 +1,10 @@
 package daemon
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
@@ -15,6 +17,31 @@ import (
 
 var back backend.Backend
 var fsBackend *fs.FileSystem
+
+func Run(cfg *Config) {
+	b, err := cfg.ToBackend()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
+	back = b
+
+	fsBackend = fs.New(cfg.FSRootDir)
+
+	log.WithFields(log.Fields{
+		"host": cfg.Host,
+		"port": cfg.Port,
+	}).Info("launching daemon")
+
+	http.HandleFunc("/", router)
+
+	addr := fmt.Sprintf("%v:%v", cfg.Host, cfg.Port)
+
+	if err := http.ListenAndServe(addr, nil); err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+}
 
 func sendFile(w http.ResponseWriter, r *http.Request, fk *backend.FileKey) {
 	buf, isExist, err := back.GetFile(fk)
@@ -60,24 +87,52 @@ func sendFile(w http.ResponseWriter, r *http.Request, fk *backend.FileKey) {
 			}).Warn("back.PutFile(fk, buf) failed")
 		}
 	}
-	totalWritten := 0
-	for totalWritten < len(buf) {
-		bytesWritten, err := w.Write(buf[totalWritten:])
-		if err != nil {
-			log.WithFields(log.Fields{
-				"fk.Base":     fk.Base,
-				"fk.Snapshot": fk.Snapshot,
-				"fk.FilePath": fk.FilePath,
-				"err":         err,
-			}).Warn("w.Write(buf) failed")
-			return
-		}
-		totalWritten += bytesWritten
+
+	if _, err := io.Copy(w, bytes.NewReader(buf)); err != nil {
+		log.WithFields(log.Fields{
+			"fk.Base":     fk.Base,
+			"fk.Snapshot": fk.Snapshot,
+			"fk.FilePath": fk.FilePath,
+			"err":         err,
+		}).Warn("io.Copy in sendFile failed")
 	}
 }
 
-func recvSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey, snapReader io.Reader) {
-	ok, err := back.PutSnap(sk, snapReader)
+func recvSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey, body io.Reader) {
+	if r.Header.Get("X-No-Git") == "" {
+		// since body is read twice, need to save it in memory
+		buf, err := ioutil.ReadAll(body)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"sk":  sk,
+				"err": err,
+			}).Info("ioutil.ReadAll(body) failed")
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("500 Internal Server Error"))
+			return
+		}
+
+		ok, err := fsBackend.PutSnap(sk, bytes.NewReader(buf))
+		if err != nil {
+			log.WithFields(log.Fields{
+				"sk":  sk,
+				"err": err,
+			}).Info("500 Internal Server Error")
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("500 Internal Server Error"))
+			return
+		}
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("400 Bad Request"))
+			return
+		}
+		// read from beginning of buf in next PutSnap call
+		body = bytes.NewReader(buf)
+	}
+	ok, err := back.PutSnap(sk, body)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"sk":  sk,
@@ -147,29 +202,4 @@ func router(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusBadRequest)
 	w.Write([]byte("400 Bad Request"))
 	return
-}
-
-func Run(cfg *Config) {
-	b, err := cfg.ToBackend()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
-	}
-	back = b
-
-	fsBackend = fs.New(cfg.FSRootDir)
-
-	log.WithFields(log.Fields{
-		"host": cfg.Host,
-		"port": cfg.Port,
-	}).Info("launching daemon")
-
-	http.HandleFunc("/", router)
-
-	addr := fmt.Sprintf("%v:%v", cfg.Host, cfg.Port)
-
-	if err := http.ListenAndServe(addr, nil); err != nil {
-		fmt.Fprintf(os.Stderr, "%v\n", err)
-		os.Exit(1)
-	}
 }

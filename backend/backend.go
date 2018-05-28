@@ -1,6 +1,9 @@
 package backend
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 type FileKey struct {
 	Base     string
@@ -11,6 +14,10 @@ type FileKey struct {
 type SnapKey struct {
 	Base     string
 	Snapshot string
+}
+
+func (sk *SnapKey) ToHeaderKey() string {
+	return fmt.Sprintf("%v/%v", sk.Base, sk.Snapshot)
 }
 
 type Backend interface {

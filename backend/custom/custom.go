@@ -1,6 +1,7 @@
 package custom
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -17,7 +18,7 @@ func New(command string) *CustomBackend {
 	return &CustomBackend{command: command}
 }
 
-func (c *CustomBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
+func (c *CustomBackend) GetFile(fk *backend.FileKey) (io.Reader, bool, error) {
 	cmd := exec.Command(c.command)
 
 	stdin, err := cmd.StdinPipe()
@@ -41,6 +42,9 @@ func (c *CustomBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
 		return nil, false, fmt.Errorf("failed to close stdin: %v", err)
 	}
 
+	// the stdout file descriptor is closed after cmd.Wait().
+	// therefore, we must read into a buffer or defer cmd.Wait() to the caller.
+	// deferring cmd.Wait() to the caller is a pain, so read into buf for now.
 	buf, err := ioutil.ReadAll(stdout)
 	if err != nil {
 		return nil, false, fmt.Errorf("read from cmd failed: %v", err)
@@ -51,19 +55,23 @@ func (c *CustomBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
 	}
 
 	if len(buf) < 2 {
-		return nil, false, fmt.Errorf("invalid resp from cmd (len < 2)")
+		return nil, false, fmt.Errorf("read less than two bytes from cmd")
 	}
 
 	if buf[0] == 'N' && buf[1] == 'O' {
 		return nil, false, nil
 	} else if buf[0] == 'O' && buf[1] == 'K' {
-		return buf[2:], true, nil
+		return bytes.NewReader(buf[2:]), true, nil
 	}
 
 	return nil, false, fmt.Errorf("invalid response from cmd")
 }
 
-func (c *CustomBackend) PutFile(fk *backend.FileKey, buf []byte) error {
+func (c *CustomBackend) GetSnap(sk *backend.SnapKey) (io.Reader, bool, error) {
+	return nil, false, nil
+}
+
+func (c *CustomBackend) PutFile(fk *backend.FileKey, r io.Reader) error {
 	return fmt.Errorf("not yet implemented")
 }
 

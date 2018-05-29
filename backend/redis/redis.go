@@ -2,8 +2,10 @@ package redis
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
@@ -26,7 +28,7 @@ func New(host, port string) *RedisBackend {
 	}
 }
 
-func (rb *RedisBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
+func (rb *RedisBackend) GetFile(fk *backend.FileKey) (io.Reader, bool, error) {
 	redisKey := fmt.Sprintf("%v/%v", fk.Base, fk.Snapshot)
 	out, err := rb.client.HGet(redisKey, fk.FilePath).Bytes()
 	if err != nil {
@@ -35,13 +37,20 @@ func (rb *RedisBackend) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
 		}
 		return nil, false, fmt.Errorf("HGET failed: %v", err)
 	}
-	return out, true, nil
+	return bytes.NewReader(out), true, nil
 }
 
-func (rb *RedisBackend) PutFile(fk *backend.FileKey, buf []byte) error {
+func (rb *RedisBackend) PutFile(fk *backend.FileKey, r io.Reader) error {
 	redisKey := fmt.Sprintf("%v/%v", fk.Base, fk.Snapshot)
-	_, err := rb.client.HSet(redisKey, fk.FilePath, buf).Result()
+	buf, err := ioutil.ReadAll(r)
 	if err != nil {
+		log.WithFields(log.Fields{
+			"redisKey":    redisKey,
+			"fk.FilePath": fk.FilePath,
+		}).Warn("ioutil.ReadAll(r) failed")
+		return err
+	}
+	if _, err := rb.client.HSet(redisKey, fk.FilePath, buf).Result(); err != nil {
 		log.WithFields(log.Fields{
 			"redisKey":    redisKey,
 			"fk.FilePath": fk.FilePath,
@@ -49,6 +58,20 @@ func (rb *RedisBackend) PutFile(fk *backend.FileKey, buf []byte) error {
 		return fmt.Errorf("HMSET failed: %v", err)
 	}
 	return nil
+}
+
+func (rb *RedisBackend) GetSnap(sk *backend.SnapKey) (io.Reader, bool, error) {
+	return nil, false, nil
+	// RETURN early because need to build snap from this
+	redisKey := fmt.Sprintf("%v/%v", sk.Base, sk.Snapshot)
+	out, err := rb.client.Get(redisKey).Bytes()
+	if err != nil {
+		if err == redis.Nil {
+			return nil, false, nil
+		}
+		return nil, false, fmt.Errorf("GET failed: %v", err)
+	}
+	return bytes.NewReader(out), true, nil
 }
 
 func (rb *RedisBackend) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {

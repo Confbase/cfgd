@@ -21,7 +21,8 @@ func (sk *SnapKey) ToHeaderKey() string {
 }
 
 type Backend interface {
-	GetFile(*FileKey) ([]byte, bool, error)
-	PutFile(*FileKey, []byte) error
+	GetFile(*FileKey) (io.Reader, bool, error)
+	PutFile(*FileKey, io.Reader) error
+	GetSnap(*SnapKey) (io.Reader, bool, error)
 	PutSnap(*SnapKey, io.Reader) (bool, error)
 }

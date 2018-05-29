@@ -5,12 +5,15 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/Confbase/cfgd/backend"
+	"github.com/Confbase/cfgd/cfgsnap/build"
 	"github.com/Confbase/cfgd/snapshot"
 )
 
@@ -22,7 +25,7 @@ func New(baseDir string) *FileSystem {
 	return &FileSystem{baseDir: baseDir}
 }
 
-func (fs *FileSystem) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
+func (fs *FileSystem) GetFile(fk *backend.FileKey) (io.Reader, bool, error) {
 	dirt := filepath.Join(fs.baseDir, fk.Base, "snapshots", fk.Snapshot, fk.FilePath)
 	filePath := filepath.Clean(dirt)
 	if dirt != filePath {
@@ -35,16 +38,35 @@ func (fs *FileSystem) GetFile(fk *backend.FileKey) ([]byte, bool, error) {
 		}
 		return nil, false, fmt.Errorf("os.Open(filePath) failed: %v", err)
 	}
-	buf, err := ioutil.ReadAll(f)
-	return buf, true, err
+	return f, true, err
 }
 
-func (fs *FileSystem) PutFile(*backend.FileKey, []byte) error {
+func (fs *FileSystem) PutFile(*backend.FileKey, io.Reader) error {
 	// files should only be written because of
 	// 1. checkouts in post-receive hook
 	// or 2. fs.PutSnap when cfg --no-git is used
 	// therefore, calling this function is a mistake
 	return fmt.Errorf("fs.PutFile should never be used")
+}
+
+func (fs *FileSystem) GetSnap(sk *backend.SnapKey) (io.Reader, bool, error) {
+	dirt := filepath.Join(fs.baseDir, sk.Base, "snapshots", sk.Snapshot)
+	filePath := filepath.Clean(dirt)
+	if dirt != filePath {
+		return nil, false, nil
+	}
+	r, w := io.Pipe()
+	go func() {
+		if err := build.BuildSnap(w, filePath); err != nil {
+			log.WithFields(log.Fields{
+				"err": err,
+				"sk":  sk,
+			}).Warn("build.BuildSnap(w, filePath) failed")
+		}
+		w.Close()
+	}()
+	header := fmt.Sprintf("PUT %v\n", sk.ToHeaderKey())
+	return io.MultiReader(strings.NewReader(header), r), true, nil
 }
 
 func (fs *FileSystem) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {
@@ -94,6 +116,10 @@ func (fs *FileSystem) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {
 		if err := f.Close(); err != nil {
 			return false, err
 		}
+	}
+
+	if err := os.Rename(tmpDir, baseDir); err != nil {
+		return false, err
 	}
 
 	return true, nil

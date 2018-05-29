@@ -12,12 +12,16 @@ func New() *NoOpBackend {
 	return &NoOpBackend{}
 }
 
-func (no *NoOpBackend) GetFile(*backend.FileKey) ([]byte, bool, error) {
+func (no *NoOpBackend) GetFile(*backend.FileKey) (io.Reader, bool, error) {
 	return nil, false, nil
 }
 
-func (no *NoOpBackend) PutFile(*backend.FileKey, []byte) error {
+func (no *NoOpBackend) PutFile(*backend.FileKey, io.Reader) error {
 	return nil
+}
+
+func (no *NoOpBackend) GetSnap(*backend.SnapKey) (io.Reader, bool, error) {
+	return nil, false, nil
 }
 
 func (no *NoOpBackend) PutSnap(*backend.SnapKey, io.Reader) (bool, error) {

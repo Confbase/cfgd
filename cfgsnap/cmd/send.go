@@ -47,4 +47,5 @@ Finally, the message is sent to cfgd as the body of a POST request.`,
 func init() {
 	RootCmd.AddCommand(sendCmd)
 	sendCmd.Flags().StringVarP(&sendCfg.CfgdAddr, "cfgd-addr", "c", "http://localhost:1066", "cfgd address")
+	sendCmd.Flags().BoolVarP(&sendCfg.NoGit, "no-git", "", false, "include X-No-Git header")
 }

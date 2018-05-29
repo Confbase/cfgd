@@ -44,7 +44,7 @@ func Run(cfg *Config) {
 }
 
 func sendFile(w http.ResponseWriter, r *http.Request, fk *backend.FileKey) {
-	buf, isExist, err := back.GetFile(fk)
+	fileReader, isExist, err := back.GetFile(fk)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"fk.Base":     fk.Base,
@@ -58,12 +58,7 @@ func sendFile(w http.ResponseWriter, r *http.Request, fk *backend.FileKey) {
 		return
 	}
 	if !isExist {
-		if _, isFs := back.(*fs.FileSystem); isFs {
-			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte("404 Content Not Found"))
-			return
-		}
-		buf, isExist, err = fsBackend.GetFile(fk)
+		fileReader, isExist, err = fsBackend.GetFile(fk)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"fk.Base":     fk.Base,
@@ -81,25 +76,110 @@ func sendFile(w http.ResponseWriter, r *http.Request, fk *backend.FileKey) {
 			w.Write([]byte("404 Content Not Found"))
 			return
 		}
-		if err := back.PutFile(fk, buf); err != nil {
+
+		// since the file is read twice, need to save it in memory
+		buf, err := ioutil.ReadAll(fileReader)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"fk":  fk,
+				"err": err,
+			}).Info("ioutil.ReadAll(fileReader) failed")
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("500 Internal Server Error"))
+			return
+		}
+
+		if err := back.PutFile(fk, bytes.NewReader(buf)); err != nil {
 			log.WithFields(log.Fields{
 				"fk": fk,
 			}).Warn("back.PutFile(fk, buf) failed")
 		}
+
+		fileReader = bytes.NewReader(buf)
 	}
 
-	if _, err := io.Copy(w, bytes.NewReader(buf)); err != nil {
+	if _, err := io.Copy(w, fileReader); err != nil {
 		log.WithFields(log.Fields{
-			"fk.Base":     fk.Base,
-			"fk.Snapshot": fk.Snapshot,
-			"fk.FilePath": fk.FilePath,
-			"err":         err,
+			"fk":  fk,
+			"err": err,
 		}).Warn("io.Copy in sendFile failed")
 	}
 }
 
+func sendSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey) {
+	reader, isExist, err := back.GetSnap(sk)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"sk":  sk,
+			"err": err,
+		}).Warn("back.GetSnap(sk) failed")
+
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("500 Internal Server Error"))
+		return
+	}
+	if !isExist {
+		reader, isExist, err = fsBackend.GetSnap(sk)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"sk":  sk,
+				"err": err,
+			}).Warn("fsBackend.GetSnap(sk) failed")
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("500 Internal Server Error"))
+			return
+		}
+		if !isExist {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte("404 Content Not Found"))
+			return
+		}
+
+		// since the snap is read twice, need to save it in memory
+		buf, err := ioutil.ReadAll(reader)
+		if err != nil {
+			log.WithFields(log.Fields{
+				"sk":  sk,
+				"err": err,
+			}).Info("ioutil.ReadAll(reader) failed")
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("500 Internal Server Error"))
+			return
+		}
+
+		ok, err := back.PutSnap(sk, bytes.NewReader(buf))
+		if err != nil {
+			log.WithFields(log.Fields{
+				"sk":  sk,
+				"err": err,
+			}).Info("500 Internal Server Error")
+
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte("500 Internal Server Error"))
+			return
+		}
+		if !ok {
+			w.WriteHeader(http.StatusBadRequest)
+			w.Write([]byte("400 Bad Request"))
+			return
+		}
+
+		reader = bytes.NewReader(buf)
+	}
+
+	if _, err := io.Copy(w, reader); err != nil {
+		log.WithFields(log.Fields{
+			"sk":  sk,
+			"err": err,
+		}).Warn("io.Copy in sendSnap failed")
+	}
+}
+
 func recvSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey, body io.Reader) {
-	if r.Header.Get("X-No-Git") == "" {
+	if r.Header.Get("X-No-Git") != "" {
 		// since body is read twice, need to save it in memory
 		buf, err := ioutil.ReadAll(body)
 		if err != nil {
@@ -154,7 +234,7 @@ func recvSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey, body 
 
 func parseFileKey(path string) (*backend.FileKey, bool) {
 	elems := strings.Split(path, "/")
-	if len(elems) < 3 {
+	if len(elems) < 3 || elems[len(elems)-1] == "" {
 		return nil, false
 	}
 
@@ -170,7 +250,8 @@ func parseFileKey(path string) (*backend.FileKey, bool) {
 
 func parseSnapKey(path string) (*backend.SnapKey, bool) {
 	elems := strings.Split(path, "/")
-	if len(elems) != 2 {
+	if len(elems) != 2 && !(len(elems) == 3 && elems[2] == "") {
+		fmt.Println("here")
 		return nil, false
 	}
 	return &backend.SnapKey{
@@ -183,8 +264,13 @@ func router(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		fileKey, ok := parseFileKey(r.URL.Path[1:])
 		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			w.Write([]byte("400 Bad Request"))
+			snapKey, ok := parseSnapKey(r.URL.Path[1:])
+			if !ok {
+				w.WriteHeader(http.StatusBadRequest)
+				w.Write([]byte("400 Bad Request"))
+				return
+			}
+			sendSnap(w, r, snapKey)
 			return
 		}
 		sendFile(w, r, fileKey)

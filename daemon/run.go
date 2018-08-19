@@ -77,6 +77,7 @@ func sendFile(w http.ResponseWriter, r *http.Request, fk *backend.FileKey) {
 			return
 		}
 
+		// TODO: replace this buf nonsense with io.TeeReader
 		// since the file is read twice, need to save it in memory
 		buf, err := ioutil.ReadAll(fileReader)
 		if err != nil {
@@ -137,6 +138,7 @@ func sendSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey) {
 			return
 		}
 
+		// TODO: replace this buf nonsense with io.TeeReader
 		// since the snap is read twice, need to save it in memory
 		buf, err := ioutil.ReadAll(reader)
 		if err != nil {

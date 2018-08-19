@@ -35,7 +35,7 @@ Place the post-receive hook, cfgd, and cfgsnap in the appropriate directories.
 
 ## Testing
 
-Run `./test.sh`. Tests require bash and curl.
+Run `./test_all`. Tests require bash and curl.
 
 ## Custom Backend API
 

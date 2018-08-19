@@ -1,7 +1,7 @@
 #!/bin/bash
 
 api_get_file() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
@@ -17,7 +17,7 @@ api_get_file() {
 }
 
 api_get_file_500() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_exit_1.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_exit_1.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
@@ -33,7 +33,7 @@ api_get_file_500() {
 }
 
 api_get_file_404() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_no.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_no.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
@@ -49,7 +49,7 @@ api_get_file_404() {
 }
 
 api_get_file_400_case_1() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
@@ -65,7 +65,7 @@ api_get_file_400_case_1() {
 }
 
 api_get_file_400_case_2() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
@@ -81,7 +81,7 @@ api_get_file_400_case_2() {
 }
 
 api_put_400_case_1() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
@@ -97,7 +97,7 @@ api_put_400_case_1() {
 }
 
 api_put_400_case_2() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
@@ -113,7 +113,7 @@ api_put_400_case_2() {
 }
 
 api_put_400_case_3() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_hello.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s
@@ -129,7 +129,7 @@ api_put_400_case_3() {
 }
 
 api_put_400_case_4() {
-    cfgd --custom-backend=./e2e_tests/scripts/always_exit_1.sh >/dev/null 2>&1 &
+    "$GOBIN"/cfgd --custom-backend=./e2e_tests/scripts/always_exit_1.sh >/dev/null 2>&1 &
     cfgd_pid="$!"
 
     sleep 0.1s

@@ -63,15 +63,17 @@ func (rb *RedisBackend) PutFile(fk *backend.FileKey, r io.Reader) error {
 func (rb *RedisBackend) GetSnap(sk *backend.SnapKey) (io.Reader, bool, error) {
 	return nil, false, nil
 	// RETURN early because need to build snap from this
-	redisKey := fmt.Sprintf("%v/%v", sk.Base, sk.Snapshot)
-	out, err := rb.client.Get(redisKey).Bytes()
-	if err != nil {
-		if err == redis.Nil {
-			return nil, false, nil
+	/*
+		redisKey := fmt.Sprintf("%v/%v", sk.Base, sk.Snapshot)
+		out, err := rb.client.Get(redisKey).Bytes()
+		if err != nil {
+			if err == redis.Nil {
+				return nil, false, nil
+			}
+			return nil, false, fmt.Errorf("GET failed: %v", err)
 		}
-		return nil, false, fmt.Errorf("GET failed: %v", err)
-	}
-	return bytes.NewReader(out), true, nil
+		return bytes.NewReader(out), true, nil
+	*/
 }
 
 func (rb *RedisBackend) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {

@@ -57,11 +57,12 @@ func (fs *FileSystem) GetSnap(sk *backend.SnapKey) (io.Reader, bool, error) {
 	}
 	r, w := io.Pipe()
 	go func() {
-		if err := build.BuildSnap(w, filePath); err != nil {
+		if err := build.BuildSnapSansPrefix(w, filePath, filePath); err != nil {
 			log.WithFields(log.Fields{
-				"err": err,
-				"sk":  sk,
-			}).Warn("build.BuildSnap(w, filePath) failed")
+				"err":      err,
+				"sk":       sk,
+				"filePath": filePath,
+			}).Warn("build.BuildSnapSansPrefix(w, filePath, filePath) failed")
 		}
 		w.Close()
 	}()

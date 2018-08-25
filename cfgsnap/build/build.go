@@ -1,38 +1,31 @@
 package build
 
 import (
-	"encoding/binary"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/Confbase/cfgd/cfgsnap/snapmsg"
 )
 
-func BuildSnap(out io.Writer, filePath string) error {
+func BuildSnap(w io.Writer, filePath string) error {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return err
 	}
 
 	if !fileInfo.IsDir() {
-		keyLen := uint16(len(filePath))
 		contentLen := uint64(fileInfo.Size())
-		if err := binary.Write(out, binary.BigEndian, keyLen); err != nil {
-			return err
-		}
-		if err := binary.Write(out, binary.BigEndian, contentLen); err != nil {
-			return err
-		}
-		if _, err := fmt.Fprintf(out, "%v", filePath); err != nil {
+		if err := snapmsg.WriteMsgHeader(w, filePath, contentLen); err != nil {
 			return err
 		}
 		f, err := os.Open(filePath)
 		if err != nil {
 			return err
 		}
-		if _, err := io.Copy(out, f); err != nil {
+		if _, err := io.Copy(w, f); err != nil {
 			return err
 		}
 		f.Close()
@@ -45,14 +38,14 @@ func BuildSnap(out io.Writer, filePath string) error {
 	}
 
 	for _, f := range files {
-		if err := BuildSnap(out, filepath.Join(filePath, f.Name())); err != nil {
+		if err := BuildSnap(w, filepath.Join(filePath, f.Name())); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func BuildSnapSansPrefix(out io.Writer, prefix, filePath string) error {
+func BuildSnapSansPrefix(w io.Writer, prefix, filePath string) error {
 	fileInfo, err := os.Stat(filePath)
 	if err != nil {
 		return err
@@ -70,22 +63,15 @@ func BuildSnapSansPrefix(out io.Writer, prefix, filePath string) error {
 			outFilePath = outFilePath[1:len(outFilePath)]
 		}
 
-		keyLen := uint16(len(outFilePath))
 		contentLen := uint64(fileInfo.Size())
-		if err := binary.Write(out, binary.BigEndian, keyLen); err != nil {
-			return err
-		}
-		if err := binary.Write(out, binary.BigEndian, contentLen); err != nil {
-			return err
-		}
-		if _, err := fmt.Fprintf(out, "%v", outFilePath); err != nil {
+		if err := snapmsg.WriteMsgHeader(w, outFilePath, contentLen); err != nil {
 			return err
 		}
 		f, err := os.Open(filePath)
 		if err != nil {
 			return err
 		}
-		if _, err := io.Copy(out, f); err != nil {
+		if _, err := io.Copy(w, f); err != nil {
 			return err
 		}
 		f.Close()
@@ -98,7 +84,7 @@ func BuildSnapSansPrefix(out io.Writer, prefix, filePath string) error {
 	}
 
 	for _, f := range files {
-		if err := BuildSnapSansPrefix(out, prefix, filepath.Join(filePath, f.Name())); err != nil {
+		if err := BuildSnapSansPrefix(w, prefix, filepath.Join(filePath, f.Name())); err != nil {
 			return err
 		}
 	}

@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"strings"
 
 	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/Confbase/cfgd/backend"
+	"github.com/Confbase/cfgd/cfgsnap/snapmsg"
 	"github.com/Confbase/cfgd/snapshot"
 )
 
@@ -61,19 +63,33 @@ func (rb *RedisBackend) PutFile(fk *backend.FileKey, r io.Reader) error {
 }
 
 func (rb *RedisBackend) GetSnap(sk *backend.SnapKey) (io.Reader, bool, error) {
-	return nil, false, nil
-	// RETURN early because need to build snap from this
-	/*
+	r, w := io.Pipe()
+	go func() {
 		redisKey := fmt.Sprintf("%v/%v", sk.Base, sk.Snapshot)
-		out, err := rb.client.Get(redisKey).Bytes()
-		if err != nil {
-			if err == redis.Nil {
-				return nil, false, nil
-			}
-			return nil, false, fmt.Errorf("GET failed: %v", err)
+		kvs, err := rb.client.HGetAll(redisKey).Result()
+		if err != nil && err != redis.Nil {
+			log.WithFields(log.Fields{
+				"err": err,
+				"sk":  sk,
+			}).Warn("in GetSnap, rb.client.HGetAll failed")
+			w.Close()
+			return
 		}
-		return bytes.NewReader(out), true, nil
-	*/
+		for filePath, contents := range kvs {
+			if err := snapmsg.WriteString(w, filePath, contents); err != nil {
+				log.WithFields(log.Fields{
+					"err":      err,
+					"sk":       sk,
+					"filePath": w,
+				}).Warn("in GetSnap, build.WriteString failed")
+				w.Close()
+				return
+			}
+		}
+		w.Close()
+	}()
+	header := fmt.Sprintf("PUT %v\n", sk.ToHeaderKey())
+	return io.MultiReader(strings.NewReader(header), r), true, nil
 }
 
 func (rb *RedisBackend) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {

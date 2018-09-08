@@ -1,0 +1,13 @@
+github.com/go-redis/redis v0.0.0-20180521141830-e3d9f9d1c75d h1:pntSyKKPlhMnYqViTOWRjenwJXJGnyqsg9YYvO/SCKE=
+github.com/go-redis/redis v0.0.0-20180521141830-e3d9f9d1c75d/go.mod h1:NAIEuMOZ/fxfXJIrKDQDz8wamY7mA7PouImQ2Jvg6kA=
+github.com/inconshreveable/mousetrap v1.0.0/go.mod h1:PxqpIevigyE2G7u3NXJIT2ANytuPF1OarO4DADm73n8=
+github.com/sirupsen/logrus v0.0.0-20180523074243-ea8897e79973 h1:3AJZYTzw3gm3TNTt30x0CCKD7GOn2sdd50Hn35fQkGY=
+github.com/sirupsen/logrus v0.0.0-20180523074243-ea8897e79973/go.mod h1:pMByvHTf9Beacp5x1UXfOR9xyW/9antXMhjMPG0dEzc=
+github.com/spf13/cobra v0.0.3 h1:ZlrZ4XsMRm04Fr5pSFxBgfND2EBVa1nLpiy1stUsX/8=
+github.com/spf13/cobra v0.0.3/go.mod h1:1l0Ry5zgKvJasoi3XT1TypsSe7PqH0Sj9dhYf7v3XqQ=
+github.com/spf13/pflag v1.0.1 h1:aCvUg6QPl3ibpQUxyLkrEkCHtPqYJL4x9AuhqVqFis4=
+github.com/spf13/pflag v1.0.1/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
+golang.org/x/crypto v0.0.0-20180523194057-75e913eb8a8e h1:PVeyWt17ulXrFTT+HGqWYuHaJJuvbSf6vBMYcUpiLFQ=
+golang.org/x/crypto v0.0.0-20180523194057-75e913eb8a8e/go.mod h1:6SG95UA2DQfeDnfUPMdvaQW0Q7yPrPDi9nlGo2tz2b4=
+golang.org/x/sys v0.0.0-20180522224204-88eb85aaee56 h1:ALdc3t+jAqSs6+pzVEioBeI8YtMICgYVFhEy6P69czc=
+golang.org/x/sys v0.0.0-20180522224204-88eb85aaee56/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=

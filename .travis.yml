@@ -6,4 +6,4 @@ go:
   - "1.10.x"
   - master
 
-script: GOBIN="$GOPATH/bin" ./test_all
+script: env GO111MODULE=on GOBIN="$GOPATH/bin" ./test_all

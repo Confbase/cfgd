@@ -36,7 +36,6 @@ func Run(cfg *Config) {
 	http.HandleFunc("/", router)
 
 	addr := fmt.Sprintf("%v:%v", cfg.Host, cfg.Port)
-
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		fmt.Fprintf(os.Stderr, "%v\n", err)
 		os.Exit(1)
@@ -234,31 +233,47 @@ func recvSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey, body 
 	w.Write([]byte("201 Content Created"))
 }
 
+// parseFileKey expects a path in this format
+// <baseWithOne/slash>/<snapshot>/<filepath/which/can/contain/slashes>
+// The function returns a *FileKey and a bool indicating whether the
+// *FileKey is valid.
 func parseFileKey(path string) (*backend.FileKey, bool) {
 	elems := strings.Split(path, "/")
-	if len(elems) < 3 || elems[len(elems)-1] == "" {
+	if len(elems) < 4 || elems[len(elems)-1] == "" {
 		return nil, false
 	}
 
-	firstSlash := strings.Index(path, "/")
-	secondSlash := strings.Index(path[firstSlash+1:], "/")
+	// find the index of the third slash
+	thirdSlashIdx, slashCount := 0, 0
+	for i := 0; i < len(path); i++ {
+		if path[i] == '/' {
+			slashCount++
+			if slashCount >= 3 {
+				thirdSlashIdx = i
+				break
+			}
+		}
+	}
 
 	return &backend.FileKey{
-		Base:     elems[0],
-		Snapshot: elems[1],
-		FilePath: path[firstSlash+secondSlash+2:],
+		Base:     elems[0] + "/" + elems[1],
+		Snapshot: elems[2],
+		FilePath: path[thirdSlashIdx+1:],
 	}, true
 }
 
+// parseSnapKey expects a path in this format
+// <baseWithOne/slash>/<snapshot>
+// The function returns a *SnapKey and a bool indicating whether the
+// *SnapKey is valid.
 func parseSnapKey(path string) (*backend.SnapKey, bool) {
 	elems := strings.Split(path, "/")
-	if len(elems) != 2 && !(len(elems) == 3 && elems[2] == "") {
-		fmt.Println("here")
+	if len(elems) != 3 && !(len(elems) == 4 && elems[3] == "") {
 		return nil, false
 	}
 	return &backend.SnapKey{
-		Base:     elems[0],
-		Snapshot: elems[1],
+		Base:     elems[0] + "/" + elems[1],
+		Snapshot: elems[2],
 	}, true
 }
 

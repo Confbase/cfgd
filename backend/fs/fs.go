@@ -28,6 +28,7 @@ func New(baseDir string) *FileSystem {
 func (fs *FileSystem) GetFile(fk *backend.FileKey) (io.Reader, bool, error) {
 	dirt := filepath.Join(fs.baseDir, fk.Base, "snapshots", fk.Snapshot, fk.FilePath)
 	filePath := filepath.Clean(dirt)
+
 	if dirt != filePath {
 		return nil, false, nil
 	}

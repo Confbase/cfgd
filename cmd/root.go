@@ -55,5 +55,5 @@ func init() {
 	RootCmd.Flags().StringVarP(&cfg.CustomBackend, "custom-backend", "", "", "custom backend")
 	RootCmd.Flags().StringVarP(&cfg.RedisHost, "redis-host", "", "localhost", "redis backend host")
 	RootCmd.Flags().StringVarP(&cfg.RedisPort, "redis-port", "", "6379", "redis backend port")
-	RootCmd.Flags().StringVarP(&cfg.FSRootDir, "fs-root-dir", "", "/srv/git/", "root dir for fs backend")
+	RootCmd.Flags().StringVarP(&cfg.FSRootDir, "fs-root-dir", "", "/srv/git", "root dir for fs backend")
 }

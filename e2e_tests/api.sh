@@ -6,7 +6,7 @@ api_get_file() {
 
     sleep 0.1s
 
-    output=`curl -s localhost:1066/mybase/master/config.yml 2>&1`
+    output=`curl -s localhost:1066/thomas/mybase/master/config.yml 2>&1`
     status="$?"
 
     expect_status='0'
@@ -22,7 +22,7 @@ api_get_file_500() {
 
     sleep 0.1s
 
-    output=`curl -s localhost:1066/mybase/master/config.yml 2>&1`
+    output=`curl -s localhost:1066/thomas/mybase/master/config.yml 2>&1`
     status="$?"
 
     expect_status='0'
@@ -38,7 +38,7 @@ api_get_file_404() {
 
     sleep 0.1s
 
-    output=`curl -s localhost:1066/mybase/master/config.yml 2>&1`
+    output=`curl -s localhost:1066/thomas/mybase/master/config.yml 2>&1`
     status="$?"
 
     expect_status='0'
@@ -54,7 +54,7 @@ api_get_file_400_case_1() {
 
     sleep 0.1s
 
-    output=`curl -s localhost:1066/mybase 2>&1`
+    output=`curl -s localhost:1066/thomas/mybase 2>&1`
     status="$?"
 
     expect_status='0'
@@ -86,7 +86,7 @@ api_put_400_case_1() {
 
     sleep 0.1s
 
-    output=`curl -s -X POST localhost:1066/mybase/master/some_file.yml 2>&1`
+    output=`curl -s -X POST localhost:1066/thomas/mybase/master/some_file.yml 2>&1`
     status="$?"
 
     expect_status='0'
@@ -102,7 +102,7 @@ api_put_400_case_2() {
 
     sleep 0.1s
 
-    output=`curl -s -X POST localhost:1066/mybase 2>&1`
+    output=`curl -s -X POST localhost:1066/thomas/mybase 2>&1`
     status="$?"
 
     expect_status='0'
@@ -134,7 +134,7 @@ api_put_400_case_4() {
 
     sleep 0.1s
 
-    output=`curl -s -X POST localhost:1066/mybase/master 2>&1`
+    output=`curl -s -X POST localhost:1066/thomas/mybase/master 2>&1`
     status="$?"
 
     expect_status='0'

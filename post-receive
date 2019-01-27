@@ -11,5 +11,6 @@ do
         exit 1
     fi
     cfgsnap build "snapshots/$branch" | \
-        cfgsnap send "$(basename $(pwd))" "$branch"
+        cfgsnap send \
+                "$(basename $(dirname $(pwd)))/$(basename $(pwd))" "$branch"
 done

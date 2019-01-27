@@ -63,6 +63,9 @@ func (fs *FileSystem) GetSnap(sk *backend.SnapKey) (io.Reader, bool, error) {
 			"sk":       sk,
 			"filePath": filePath,
 		}).Warn("build.BuildSnapSansPrefix(filePath, filePath) failed")
+		if os.IsNotExist(err) {
+			return nil, false, nil
+		}
 		return nil, false, err
 	}
 	header := fmt.Sprintf("PUT %v\n", sk.ToHeaderKey())

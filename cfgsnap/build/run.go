@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 )
@@ -9,7 +10,12 @@ import (
 func Run(cfg *Config) {
 	if !cfg.NoDirname {
 		for _, filePath := range cfg.Targets {
-			if err := BuildSnap(os.Stdout, filePath); err != nil {
+			snapRdr, err := BuildSnap(filePath)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "error: %v\n", err)
+				os.Exit(1)
+			}
+			if _, err := io.Copy(os.Stdout, snapRdr); err != nil {
 				fmt.Fprintf(os.Stderr, "error: %v\n", err)
 				os.Exit(1)
 			}
@@ -36,7 +42,12 @@ func Run(cfg *Config) {
 			fmt.Fprintf(os.Stderr, "failed to cd: %v\n", err)
 			os.Exit(1)
 		}
-		if err := BuildSnap(os.Stdout, filepath.Base(filePath)); err != nil {
+		snapRdr, err := BuildSnap(filepath.Base(filePath))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			os.Exit(1)
+		}
+		if _, err := io.Copy(os.Stdout, snapRdr); err != nil {
 			fmt.Fprintf(os.Stderr, "error: %v\n", err)
 			os.Exit(1)
 		}

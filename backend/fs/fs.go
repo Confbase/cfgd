@@ -56,19 +56,17 @@ func (fs *FileSystem) GetSnap(sk *backend.SnapKey) (io.Reader, bool, error) {
 	if dirt != filePath {
 		return nil, false, nil
 	}
-	r, w := io.Pipe()
-	go func() {
-		if err := build.BuildSnapSansPrefix(w, filePath, filePath); err != nil {
-			log.WithFields(log.Fields{
-				"err":      err,
-				"sk":       sk,
-				"filePath": filePath,
-			}).Warn("build.BuildSnapSansPrefix(w, filePath, filePath) failed")
-		}
-		w.Close()
-	}()
+	snapRdr, err := build.BuildSnapSansPrefix(filePath, filePath)
+	if err != nil {
+		log.WithFields(log.Fields{
+			"err":      err,
+			"sk":       sk,
+			"filePath": filePath,
+		}).Warn("build.BuildSnapSansPrefix(filePath, filePath) failed")
+		return nil, false, err
+	}
 	header := fmt.Sprintf("PUT %v\n", sk.ToHeaderKey())
-	return io.MultiReader(strings.NewReader(header), r), true, nil
+	return io.MultiReader(strings.NewReader(header), snapRdr), true, nil
 }
 
 func (fs *FileSystem) PutSnap(sk *backend.SnapKey, r io.Reader) (bool, error) {

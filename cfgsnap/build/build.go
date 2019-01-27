@@ -64,7 +64,11 @@ func BuildSnapSansPrefix(w io.Writer, prefix, filePath string) error {
 		}
 
 		contentLen := uint64(fileInfo.Size())
-		if err := snapmsg.WriteMsgHeader(w, outFilePath, contentLen); err != nil {
+		if err := snapmsg.WriteMsgHeader(
+			w,
+			outFilePath,
+			contentLen,
+		); err != nil {
 			return err
 		}
 		f, err := os.Open(filePath)
@@ -84,7 +88,11 @@ func BuildSnapSansPrefix(w io.Writer, prefix, filePath string) error {
 	}
 
 	for _, f := range files {
-		if err := BuildSnapSansPrefix(w, prefix, filepath.Join(filePath, f.Name())); err != nil {
+		if err := BuildSnapSansPrefix(
+			w,
+			prefix,
+			filepath.Join(filePath, f.Name()),
+		); err != nil {
 			return err
 		}
 	}

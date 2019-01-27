@@ -181,6 +181,7 @@ func sendSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey) {
 
 func recvSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey, body io.Reader) {
 	if r.Header.Get("X-No-Git") != "" {
+		// TODO: replace this "read twice so save" shit with io.TeeReader
 		// since body is read twice, need to save it in memory
 		buf, err := ioutil.ReadAll(body)
 		if err != nil {
@@ -240,6 +241,10 @@ func recvSnap(w http.ResponseWriter, r *http.Request, sk *backend.SnapKey, body 
 func parseFileKey(path string) (*backend.FileKey, bool) {
 	elems := strings.Split(path, "/")
 	if len(elems) < 4 || elems[len(elems)-1] == "" {
+		log.WithFields(log.Fields{
+			"path":  path,
+			"elems": elems,
+		}).Warn("parseFileKey failed")
 		return nil, false
 	}
 
@@ -269,6 +274,11 @@ func parseFileKey(path string) (*backend.FileKey, bool) {
 func parseSnapKey(path string) (*backend.SnapKey, bool) {
 	elems := strings.Split(path, "/")
 	if len(elems) != 3 && !(len(elems) == 4 && elems[3] == "") {
+		log.WithFields(log.Fields{
+			"path":       path,
+			"len(elems)": len(elems),
+			"elems":      elems,
+		}).Warn("parseSnapKey failed")
 		return nil, false
 	}
 	return &backend.SnapKey{

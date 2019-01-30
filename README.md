@@ -32,6 +32,7 @@ This repository contains three things:
 To build from source, run `go get -u github.com/Confbase/cfgd`.
 
 Place the post-receive hook, cfgd, and cfgsnap in the appropriate directories.
+- For more detailed instructions, look [here](detailed_installation_guide.md). 
 
 ## Testing
 

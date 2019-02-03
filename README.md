@@ -160,4 +160,10 @@ Apache V2
 
 ## Contributing
 
-Pull requests and new issues are welcome.
+Pull requests and new issues are welcome. Please add yourself to the
+"Contributors" section in your pull request.
+
+### Contributors
+
+Thomas Fischer (original author)
+Drake Eidukas
